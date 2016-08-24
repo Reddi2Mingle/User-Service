@@ -3,7 +3,7 @@ const neo4j = require('neo4j');
 const sequelize = require('sequelize');
 const dbSql = require('../db/sqlconfig');
 // const db = new neo4j.GraphDatabase('http://app55234389-2DSvfe:UxlI4yKGxG8cueLnV1ca@app552343892dsvfe.sb10.stations.graphenedb.com:24789');
-const db = new neo4j.GraphDatabase('http://neo4j:cake@localhost:7474');
+const db = new neo4j.GraphDatabase(`http://neo4j:cake@${process.env.HOST}:7474`);
 const request = require('request');
 require('../helpers/api_keys');
 
@@ -130,6 +130,9 @@ const createUserSubreddits = (redditId) => {
 };
 
 module.exports = {
+  test: (req, res) => {
+    res.send('ok');
+  },
   //once authenticated, create new user in neo4j. once successful, create new user in sql
   createNewUser: (req, res) => {
     console.log('create New User in user service');
@@ -163,16 +166,16 @@ module.exports = {
               photo: 'https://cdn1.iconfinder.com/data/icons/simple-icons/4096/reddit-4096-black.png',
               preference: null,
               gender: null,
-            });
-          })
-          .then((data) => {
-            console.log('user-service/userController.js: User added to MySQL database:', profile.id);
-            createUserSubreddits(profile.id);
+            })
+            .then((data) => {
+              console.log('user-service/userController.js: User added to MySQL database:', profile.id);
+              createUserSubreddits(profile.id);
+            })
           });
         });
       }
     });
-  },
+  },  
 
   loginCredentials: (req, res) => {
     var username = req.body.username;
@@ -270,7 +273,7 @@ module.exports = {
             // Request main app server to being the potential creation process
             request({
               method: 'POST',
-              url: `http://localhost:${process.env.PORT_APP}/api/potentials/createPotentials`,
+              url: `http://${process.env.HOST}:${process.env.PORT_APP}/api/potentials/createPotentials`,
               form: {
                 redditId: redditId,
               }
