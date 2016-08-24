@@ -3,9 +3,22 @@ const neo4j = require('neo4j');
 const sequelize = require('sequelize');
 const dbSql = require('../db/sqlconfig');
 // const db = new neo4j.GraphDatabase('http://app55234389-2DSvfe:UxlI4yKGxG8cueLnV1ca@app552343892dsvfe.sb10.stations.graphenedb.com:24789');
-const db = new neo4j.GraphDatabase(`http://neo4j:cake@${process.env.HOST}:7474`);
+const db = new neo4j.GraphDatabase(`http://neo4j:cake@$neo4j:7474`);
 const request = require('request');
 require('../helpers/api_keys');
+
+// console.log(db)
+db.cypher({
+  query: 'CREATE (n {name: "Christine Chou"})',
+}, (err, yay) => {
+  if (err) {
+    console.log('could not save christine chou with err',err);
+    
+  } else {
+    console.log('SAVED!!!!!!!!!!!!!!!',yay)
+  }
+});
+
 
 const queryUserSubreddits = (redditId) => (
   new Promise((resolve, reject) => {
@@ -158,7 +171,7 @@ const createUserSubreddits = (redditId, res) => {
           query: saveSubreddits,
       }, (err, results) => {
         if (err) {
-          console.log(`server/userController.js 150: issue with adding ${results}: ${err}`);
+          console.log(`server/userController.js 150: issue with saving subreddits for ${redditId}, results - ${results}: error - ${err}`);
         } else {
           console.log(`server/userController.js 152: subreddits saved to database, results: ${results}`);
           // Save the follow relationships for (user)->(subreddits) to the database
@@ -166,7 +179,7 @@ const createUserSubreddits = (redditId, res) => {
               query: saveFollows,
           }, (err, results) => {
             if (err) {
-              console.log(`server/userController.js 158: issue with adding ${results}: ${err}`);
+              console.log(`server/userController.js 158: issue with adding subreddits, results - ${results}: error - ${err}`);
             } else {
               console.log(`server/userController.js 160: subreddit relationships saved to database, results:  ${results}`);
               // Kick off the process to update the profile data (karma, trophies, gold member status)
@@ -200,8 +213,6 @@ const updateProfileData = (redditId, res) => (
 );
 
 module.exports = {
-<<<<<<< 1b35d2ef7cdba9876f0fc4a0eaccf6ef310ee6f0
-
   // Increment number of delivered and received upvotes and downvotes
   saveVotes: (req, res) => {
     const deliveredUpvotes = Number(req.body.deliveredUpvotes);
@@ -232,7 +243,6 @@ module.exports = {
 
   // Once authenticated, create new user in neo4j. once successful, create new user in sql
   createNewUser: (req, res) => {
-    console.log('create New User in user service');
 
     const accessToken = req.body.accessToken;
     const refreshToken = req.body.refreshToken;
@@ -250,12 +260,13 @@ module.exports = {
       },
     }, (err, results) => {
       if (err) {
-        console.log(`user-service/userController.js: issue with adding ${profile.name}: ${err}`);
+        console.log(`user-service/userController.js: issue with adding to NEO4J ${profile.name}: ${err}`);
       } else {
         console.log(`user-service/userController.js: user is actually saved to Neo4j, results: ${results}`);
         // Find or create the user
         dbSql.Users.findOrCreate({ where: { redditId: profile.id, name: profile.name } }).then(() => {
           dbSql.Users.find({ where: { redditId: profile.id } }).then((task) => {
+            console.log(`inside dbsql, profile: ${profile}`)
             // Update is invoked (so that we aren't creating duplicate users)
             task.update({
               refreshToken: refreshToken,
@@ -319,7 +330,7 @@ module.exports = {
 
     queryRefreshToken(username, password).then((refreshToken) => {
       request({
-        url: `https://${process.env['REDDIT_KEY']}:${process.env['REDDIT_SECRET']}@ssl.reddit.com/api/v1/access_token?state=uniquestring&scope=identity&client_id=${process.env['REDDIT_KEY']}&redirect_uri=http://127.0.0.1:3000/auth/reddit/callback&refresh_token=${refreshToken}&grant_type=refresh_token`,
+        url: `https://${process.env['REDDIT_KEY']}:${process.env['REDDIT_SECRET']}@ssl.reddit.com/api/v1/access_token?state=uniquestring&scope=identity&client_id=${process.env['REDDIT_KEY']}&redirect_uri=http://127.0.0.1:${process.env.PORT_APP}/auth/reddit/callback&refresh_token=${refreshToken}&grant_type=refresh_token`,
         method: 'POST',
       }, (err, results) => {
         if (err) {
@@ -355,9 +366,10 @@ module.exports = {
           task.update({ gender: gender, preference: preference }).then((data2) => {
             // User preferences have now been added
             // Request main app server to being the potential creation process
+            console.log('about to make a post request to create potentials:',`http://127.0.0.1:${process.env.PORT_APP}/api/potentials/createPotentials`)
             request({
               method: 'POST',
-              url: `http://${process.env.HOST}:${process.env.PORT_APP}/api/potentials/createPotentials`,
+              url: `http://127.0.0.1:${process.env.PORT_APP}/api/potentials/createPotentials`,
               form: {
                 redditId: redditId,
               }
